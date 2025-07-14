@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Calendar, User } from "lucide-react";
-
 import CalenderComponent from "../../components/CalendarComponent"; // Import the Calendar component
 import Status from "@/components/Status";
 import AIAssistant from "@/components/AIAssistant";
@@ -133,8 +131,10 @@ const AppointmentBookingApp = () => {
         await bookAppointment(payload);
         console.log("Appointment added successfully");
       } else if (dialogMode === "edit" && selectedAppointment) {
-        // For editing appointment, keep the original time and update description
+        // For editing appointment, send both description and time
+        const isoTime = selectedDate.toISOString();
         const payload = {
+          time: isoTime,
           description: appointmentPurpose.trim(),
         };
 
@@ -230,13 +230,12 @@ const AppointmentBookingApp = () => {
             >
               Appointment Purpose
             </label>
-            <textarea
+            <input
               id="purpose"
               value={appointmentPurpose}
               onChange={(e) => setAppointmentPurpose(e.target.value)}
               placeholder="Enter the purpose of your appointment..."
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              rows={3}
               disabled={isSubmitting}
             />
           </div>

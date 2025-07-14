@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
     }
     // Store log entries as structured objects
     const logEntries = data.message.toolCalls || [];
-    const id = logEntries[0].id;
     console.log("logEntries", logEntries);
 
     console.log("logEntries.id", logEntries.id);
@@ -42,7 +41,7 @@ export async function POST(req: NextRequest) {
 
 //GET Request
 
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     if (!dict.hasOwnProperty("id")) {
       return NextResponse.json(

@@ -134,8 +134,8 @@ const AIAssistant = ({
                 : "Click the microphone to start a voice conversation with your AI assistant."}
             </p>
             <p className="text-gray-500 text-xs">
-              Say things like: "Book an appointment for tomorrow at 2 PM" or
-              "What's my schedule for this week?"
+              Say things like: &quot;Book an appointment for tomorrow at 2
+              PM&quot; or &quot;What&apos;s my schedule for this week?&quot;
             </p>
           </div>
         </div>
@@ -203,13 +203,13 @@ const AIAssistant = ({
           </p>
           <div className="flex flex-wrap gap-2 justify-center">
             <span className="px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">
-              "Book appointment"
+              &quot;Book appointment&quot;
             </span>
             <span className="px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs">
-              "Check schedule"
+              &quot;Check schedule&quot;
             </span>
             <span className="px-3 py-1 bg-purple-50 text-purple-700 rounded-full text-xs">
-              "Cancel meeting"
+              &quot;Cancel meeting&quot;
             </span>
           </div>
         </div>

@@ -1,4 +1,9 @@
-import { deleteRequest, getRequest, postRequest } from "./ApiRequest";
+import {
+  deleteRequest,
+  getRequest,
+  postRequest,
+  putRequest,
+} from "./ApiRequest";
 import { ENDPOINTS } from "./EndPoints";
 
 //  AUTH API's -------
@@ -28,7 +33,7 @@ export const bookAppointment = (payload: any) => {
 };
 
 export const updateAppointment = (appointmentId: string, payload: any) => {
-  return postRequest(`${ENDPOINTS.GET_APPOINTMENTS}/${appointmentId}`, payload);
+  return putRequest(`${ENDPOINTS.GET_APPOINTMENTS}/${appointmentId}`, payload);
 };
 
 export const deleteAppointment = (appointmentId: string) => {

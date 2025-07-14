@@ -1,18 +1,5 @@
 import React from "react";
-import {
-  Calendar,
-  MessageCircle,
-  Clock,
-  User,
-  Send,
-  Bot,
-  CheckCircle,
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  X,
-  Edit3,
-} from "lucide-react";
+import { Calendar, MessageCircle, Clock, CheckCircle } from "lucide-react";
 
 const Status: React.FC<any> = ({ appointments }) => {
   return (

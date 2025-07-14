@@ -12,7 +12,7 @@ const CalendarComponent = ({
   className = "",
 }: any) => {
   const [currentDate, setCurrentDate] = useState<any>(new Date());
-  const [viewMode, setViewMode] = useState<any>("month"); // 'month', 'week', 'day'
+  // const [viewMode, setViewMode] = useState<any>("month"); // 'month', 'week', 'day'
 
   // Get current date info
   const today = new Date();
@@ -20,12 +20,12 @@ const CalendarComponent = ({
     return date.toDateString() === today.toDateString();
   };
 
-  const isSameMonth = (date1: any, date2: any) => {
-    return (
-      date1.getMonth() === date2.getMonth() &&
-      date1.getFullYear() === date2.getFullYear()
-    );
-  };
+  // const isSameMonth = (date1: any, date2: any) => {
+  //   return (
+  //     date1.getMonth() === date2.getMonth() &&
+  //     date1.getFullYear() === date2.getFullYear()
+  //   );
+  // };
 
   const getDaysInMonth = (date: any) => {
     const year = date.getFullYear();
@@ -313,7 +313,7 @@ const CalendarComponent = ({
                       No appointments scheduled
                     </p>
                     <p className="text-gray-500 text-xs mt-1">
-                      Click "Add" to schedule an appointment
+                      Click &quot;Add&quot; to schedule an appointment
                     </p>
                   </div>
                 );

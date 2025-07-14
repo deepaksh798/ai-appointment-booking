@@ -2,7 +2,7 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { getToken, removeToken } from "@/_utils/cookies";
+import { getToken } from "@/_utils/cookies";
 import NavBar from "../NavBar/NavBar";
 
 // import Navbar from "./NavBar";
