@@ -1,3 +1,5 @@
+export const runtime = "edge";
+
 // import { useParams } from "next/navigation";
 import { NextRequest, NextResponse } from "next/server";
 
