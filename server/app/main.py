@@ -13,5 +13,10 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
+# ✅ Global root route
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Appointment Booking API"}
+
 app.include_router(auth_routes.router)
 app.include_router(appointments_routes.router)
