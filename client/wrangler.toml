@@ -1,0 +1,6 @@
+name = "appointment-app"
+compatibility_date = "2024-07-15"
+
+kv_namespaces = [
+  { binding = "APPOINTMENT_KV", id = "your-namespace-id" }
+]
