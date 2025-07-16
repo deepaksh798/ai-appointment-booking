@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Calendar, ChevronLeft, ChevronRight, Plus, Edit3 } from "lucide-react";
 
 const CalendarComponent = ({
@@ -11,23 +11,25 @@ const CalendarComponent = ({
   selectedDate,
   className = "",
 }: any) => {
-  const [currentDate, setCurrentDate] = useState<any>(new Date());
-  // const [viewMode, setViewMode] = useState<any>("month"); // 'month', 'week', 'day'
+  const [currentDate, setCurrentDate] = useState<Date>(new Date());
+
+  // Set today as default selected date when component mounts
+  useEffect(() => {
+    if (!selectedDate) {
+      const today = new Date();
+      onDateSelect && onDateSelect(today);
+    }
+  }, [selectedDate, onDateSelect]);
 
   // Get current date info
   const today = new Date();
-  const isToday = (date: any) => {
+  const isToday = (date: Date) => {
     return date.toDateString() === today.toDateString();
   };
 
-  // const isSameMonth = (date1: any, date2: any) => {
-  //   return (
-  //     date1.getMonth() === date2.getMonth() &&
-  //     date1.getFullYear() === date2.getFullYear()
-  //   );
-  // };
+  console.log("CalendarComponent rendered with appointments:", appointments);
 
-  const getDaysInMonth = (date: any) => {
+  const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
     const firstDay = new Date(year, month, 1);
@@ -35,7 +37,12 @@ const CalendarComponent = ({
     const daysInMonth = lastDay.getDate();
     const startingDayOfWeek = firstDay.getDay();
 
-    const days = [];
+    const days: Array<{
+      day: number;
+      date: Date;
+      isCurrentMonth: boolean;
+      isPrevMonth: boolean;
+    }> = [];
 
     // Add days from previous month
     const prevMonth = new Date(year, month - 1, 0);
@@ -73,24 +80,38 @@ const CalendarComponent = ({
     return days;
   };
 
-  const formatDate = (date: any) => {
+  const formatDate = (date: Date) => {
     return date.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
     });
   };
 
-  const getAppointmentsForDate = (date: any) => {
-    const dateStr = date.toISOString().split("T")[0];
-    return appointments.filter((apt: any) => apt.date === dateStr);
+  const getAppointmentsForDate = (date: Date) => {
+    // Create a date string in YYYY-MM-DD format using local timezone
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const dateStr = `${year}-${month}-${day}`;
+
+    // console.log("Looking for appointments on date:", dateStr);
+    // console.log("Available appointments:", appointments);
+
+    const foundAppointments = appointments.filter((apt: any) => {
+      // console.log("Comparing:", apt.date, "with:", dateStr);
+      return apt.date === dateStr;
+    });
+
+    // console.log("Found appointments:", foundAppointments);
+    return foundAppointments;
   };
 
-  const hasAppointments = (date: any) => {
+  const hasAppointments = (date: Date) => {
     return getAppointmentsForDate(date).length > 0;
   };
 
-  const navigateMonth = (direction: any) => {
-    setCurrentDate((prev: any) => {
+  const navigateMonth = (direction: number) => {
+    setCurrentDate((prev: Date) => {
       const newDate = new Date(prev);
       newDate.setMonth(prev.getMonth() + direction);
       return newDate;
@@ -98,17 +119,26 @@ const CalendarComponent = ({
   };
 
   const goToToday = () => {
-    setCurrentDate(new Date());
-    onDateSelect && onDateSelect(new Date());
+    const today = new Date();
+    setCurrentDate(today);
+    onDateSelect && onDateSelect(today);
   };
 
-  const handleDateClick = (dateObj: any) => {
+  const handleDateClick = (dateObj: { date: Date }) => {
+    // console.log("Date clicked:", dateObj.date);
     onDateSelect && onDateSelect(dateObj.date);
   };
 
-  const handleEditAppointment = (appointment: any, e: any) => {
+  const handleEditAppointment = (appointment: any, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the parent click event
     onAppointmentClick && onAppointmentClick(appointment);
+  };
+
+  const handleAddAppointmentClick = () => {
+    if (selectedDate) {
+      // console.log("Adding appointment for date:", selectedDate);
+      onAddAppointment && onAddAppointment(selectedDate);
+    }
   };
 
   const days = getDaysInMonth(currentDate);
@@ -201,7 +231,7 @@ const CalendarComponent = ({
                 {/* Appointment Indicators */}
                 {dayAppointments.length > 0 && (
                   <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex space-x-1">
-                    {dayAppointments.slice(0, 3).map((apt: any, i: any) => (
+                    {dayAppointments.slice(0, 3).map((apt: any, i: number) => (
                       <div
                         key={i}
                         className={`w-1.5 h-1.5 rounded-full ${
@@ -241,7 +271,7 @@ const CalendarComponent = ({
               </h3>
               {onAddAppointment && (
                 <button
-                  onClick={() => onAddAppointment(selectedDate)}
+                  onClick={handleAddAppointmentClick}
                   className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                 >
                   <Plus className="h-4 w-4" />
@@ -255,7 +285,7 @@ const CalendarComponent = ({
               if (dayAppointments.length > 0) {
                 return (
                   <div className="space-y-2">
-                    {dayAppointments.map((appointment: any, index: any) => (
+                    {dayAppointments.map((appointment: any, index: number) => (
                       <div
                         key={index}
                         className="flex items-center justify-between p-3 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow"

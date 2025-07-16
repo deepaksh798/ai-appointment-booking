@@ -16,23 +16,17 @@ import ResponsiveDialog from "@/components/Dialog.tsx/Dialog";
 
 // Main App Component
 const AppointmentBookingApp = () => {
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Start with null
   const [openCallAssistant, setOpenCallAssistant] = useState(false);
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [appointmentPurpose, setAppointmentPurpose] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [appointments, setAppointments] = useState<any>([
-    {
-      id: 1,
-      date: "2025-07-08",
-      time: "10:00 AM",
-      title: "Team Meeting",
-      status: "confirmed",
-      description: "Weekly team sync",
-    },
-  ]);
+  const [appointments, setAppointments] = useState<any>([]);
+  const [selectedTime, setSelectedTime] = useState("10:00"); // Default time
+
+  console.log("Appointments:", appointments);
 
   const dispatch = useAppDispatch();
 
@@ -116,28 +110,46 @@ const AppointmentBookingApp = () => {
       return;
     }
 
+    if (!selectedDate) {
+      alert("Please select a date");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      if (dialogMode === "add") {
-        // For adding appointment, convert selectedDate to ISO 8601 format
-        const isoTime = selectedDate.toISOString();
-        const payload = {
-          time: isoTime,
-          description: appointmentPurpose.trim(),
-        };
+      // Ensure selectedDate is a Date object
+      const baseDate = new Date(selectedDate);
 
+      // Get year, month, day from selectedDate
+      const year = baseDate.getFullYear();
+      const month = baseDate.getMonth();
+      const day = baseDate.getDate();
+
+      // Parse selectedTime
+      const [hours, minutes] = selectedTime.split(":").map(Number);
+
+      // Create a new Date in UTC
+      const appointmentDate = new Date(Date.UTC(year, month, day, hours, minutes, 0, 0));
+
+      // Convert to ISO string (UTC)
+      const isoTime = appointmentDate.toISOString();
+
+      const payload = {
+        time: isoTime,
+        description: appointmentPurpose.trim(),
+      };
+
+      console.log("Selected Date:", selectedDate);
+      console.log("Selected Time:", selectedTime);
+      console.log("Appointment Date with Time (UTC):", appointmentDate);
+      console.log("ISO Time:", isoTime);
+
+      if (dialogMode === "add") {
         console.log("Adding appointment with payload:", payload);
         await bookAppointment(payload);
         console.log("Appointment added successfully");
       } else if (dialogMode === "edit" && selectedAppointment) {
-        // For editing appointment, send both description and time
-        const isoTime = selectedDate.toISOString();
-        const payload = {
-          time: isoTime,
-          description: appointmentPurpose.trim(),
-        };
-
         console.log(
           "Updating appointment with ID:",
           selectedAppointment.id,
@@ -222,6 +234,23 @@ const AppointmentBookingApp = () => {
               })}
             </div>
           )}
+
+          <div>
+            <label
+              htmlFor="time"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
+              Appointment Time
+            </label>
+            <input
+              type="time"
+              id="time"
+              value={selectedTime}
+              onChange={(e) => setSelectedTime(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              disabled={isSubmitting}
+            />
+          </div>
 
           <div>
             <label
