@@ -18,9 +18,8 @@ async def signup(user: User):
         raise HTTPException(status_code=400, detail="Email already exists")
     hashed_pwd = bcrypt.hash(user.password)
     result = await db.users.insert_one({"email": user.email, "password": hashed_pwd})
-
-    # token = create_token(str(result.inserted_id))
-    return {"message": "User created successfully"}
+    token = create_token(str(result.inserted_id))
+    return {"message": "User created successfully", "token": token}
 
 @router.post("/login")
 async def login(user: User):
