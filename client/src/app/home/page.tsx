@@ -35,7 +35,27 @@ const AppointmentBookingApp = () => {
   };
 
   const handleAppointmentClick = (appointment: any) => {
+    console.log("Appointment clicked:", appointment);
+
+    // Convert "11:01 PM" to "23:01"
+    let timeValue = "10:00";
+    if (appointment.time) {
+      const match = appointment.time.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+      if (match) {
+        let hours = parseInt(match[1], 10);
+        const minutes = match[2];
+        const ampm = match[3].toUpperCase();
+        if (ampm === "PM" && hours !== 12) hours += 12;
+        if (ampm === "AM" && hours === 12) hours = 0;
+        timeValue = `${hours.toString().padStart(2, "0")}:${minutes}`;
+      } else {
+        // fallback if already in HH:mm
+        timeValue = appointment.time;
+      }
+    }
+
     setSelectedAppointment(appointment);
+    setSelectedTime(timeValue);
     setAppointmentPurpose(appointment.title || appointment.description || "");
     setDialogMode("edit");
     setOpenDialog(true);
@@ -130,7 +150,9 @@ const AppointmentBookingApp = () => {
       const [hours, minutes] = selectedTime.split(":").map(Number);
 
       // Create a new Date in UTC
-      const appointmentDate = new Date(Date.UTC(year, month, day, hours, minutes, 0, 0));
+      const appointmentDate = new Date(
+        Date.UTC(year, month, day, hours, minutes, 0, 0)
+      );
 
       // Convert to ISO string (UTC)
       const isoTime = appointmentDate.toISOString();
