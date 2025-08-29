@@ -4,6 +4,7 @@ from utils.jwt_handler import verify_token
 from app.database import db
 from fastapi.security import OAuth2PasswordBearer
 from bson.objectid import ObjectId
+from datetime import timedelta
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -21,6 +22,19 @@ async def create_appointment(appointment: Appointment, user_id: str = Depends(ge
     print("Creating appointment for user:", user_id, "with data:", appointment)
     appointment_data = appointment.model_dump()
     appointment_data["user_id"] = user_id
+   # Define time window (±30 minutes)
+    start_time = appointment.time - timedelta(minutes=30)
+    end_time = appointment.time + timedelta(minutes=30)
+
+    # Check for conflicting appointments within 30-minute window
+    check_existing = await db.appointments.find_one({
+        "user_id": user_id,
+        "time": {"$gte": start_time, "$lt": end_time}
+    })
+
+    if check_existing:
+        raise HTTPException(status_code=400, detail="An appointment already exists within 30 minutes of the requested time.")
+
     result = await db.appointments.insert_one(appointment_data)
     print("Appointment created with ID:", result.inserted_id)
     return {"message": "Appointment created", "appointment_id": str(result.inserted_id)}
@@ -56,17 +70,43 @@ async def delete_appointment(appointment_id: str, user_id: str = Depends(get_cur
 @router.put("/appointments/{appointment_id}")
 async def update_appointment(appointment_id: str, appointment: Appointment, user_id: str = Depends(get_current_user)):
     print("Updating appointment ID:", appointment_id, "for user:", user_id, "with data:", appointment)
+
     try:
         obj_id = ObjectId(appointment_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid appointment ID format")
+
+    # New appointment time
     appointment_data = appointment.model_dump()
     appointment_data["user_id"] = user_id
-    result = await db.appointments.update_one({"_id": obj_id, "user_id": user_id}, {"$set": appointment_data})
+    new_time = appointment.time
+
+    # Define time window (±30 minutes)
+    start_time = new_time - timedelta(minutes=30)
+    end_time = new_time + timedelta(minutes=30)
+
+    # Check for conflicting appointments (excluding the one being updated)
+    check_conflict = await db.appointments.find_one({
+        "user_id": user_id,
+        "_id": {"$ne": obj_id},  # Exclude current appointment
+        "time": {"$gte": start_time, "$lt": end_time}
+    })
+
+    if check_conflict:
+        raise HTTPException(status_code=400, detail="Another appointment exists within 30 minutes of the new time.")
+
+    # Proceed to update
+    result = await db.appointments.update_one(
+        {"_id": obj_id, "user_id": user_id},
+        {"$set": appointment_data}
+    )
+
     print("Update result:", result)
+
     if result.modified_count == 0:
         print("No appointment found with ID:", appointment_id)
         raise HTTPException(status_code=404, detail="Appointment not found or no changes made")
+
     print("Appointment updated successfully")
     return {"message": "Appointment updated successfully"}
 
