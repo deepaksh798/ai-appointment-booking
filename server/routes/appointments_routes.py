@@ -5,6 +5,7 @@ from app.database import db
 from fastapi.security import OAuth2PasswordBearer
 from bson.objectid import ObjectId
 from datetime import timedelta, datetime, timezone
+from utils.email_service import send_appointment_email
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -23,15 +24,12 @@ async def create_appointment(appointment: Appointment, user_id: str = Depends(ge
     appointment_data = appointment.model_dump()
     appointment_data["user_id"] = user_id
 
-    # Prevent booking in the past
     if appointment.time < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Cannot book an appointment in the past.")
 
-    # Define time window (±30 minutes)
     start_time = appointment.time - timedelta(minutes=30)
     end_time = appointment.time + timedelta(minutes=30)
 
-    # Check for conflicting appointments within 30-minute window
     check_existing = await db.appointments.find_one({
         "user_id": user_id,
         "time": {"$gte": start_time, "$lt": end_time}
@@ -42,6 +40,18 @@ async def create_appointment(appointment: Appointment, user_id: str = Depends(ge
 
     result = await db.appointments.insert_one(appointment_data)
     print("Appointment created with ID:", result.inserted_id)
+
+    # Fetch user email and name from users collection
+    print("uuser_id for email fetch:", user_id)
+    user = await db.users.find_one({"_id": ObjectId(user_id)})
+    print("User details fetched for email:", user)
+    if user and user.get("email"):
+        send_appointment_email(
+            to_email=user["email"],
+            to_name=user.get("name", "User"),
+            appointment_time=appointment.time.strftime("%Y-%m-%d %H:%M UTC")
+        )
+
     return {"message": "Appointment created", "appointment_id": str(result.inserted_id)}
 
 # Get appointments endpoint
