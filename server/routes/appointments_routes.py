@@ -4,7 +4,7 @@ from utils.jwt_handler import verify_token
 from app.database import db
 from fastapi.security import OAuth2PasswordBearer
 from bson.objectid import ObjectId
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -22,7 +22,12 @@ async def create_appointment(appointment: Appointment, user_id: str = Depends(ge
     print("Creating appointment for user:", user_id, "with data:", appointment)
     appointment_data = appointment.model_dump()
     appointment_data["user_id"] = user_id
-   # Define time window (±30 minutes)
+
+    # Prevent booking in the past
+    if appointment.time < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Cannot book an appointment in the past.")
+
+    # Define time window (±30 minutes)
     start_time = appointment.time - timedelta(minutes=30)
     end_time = appointment.time + timedelta(minutes=30)
 
@@ -75,6 +80,10 @@ async def update_appointment(appointment_id: str, appointment: Appointment, user
         obj_id = ObjectId(appointment_id)
     except Exception:
         raise HTTPException(status_code=400, detail="Invalid appointment ID format")
+
+    # Prevent updating to a past time
+    if appointment.time < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Cannot update appointment to a past date/time.")
 
     # New appointment time
     appointment_data = appointment.model_dump()
