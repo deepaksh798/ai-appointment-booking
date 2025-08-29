@@ -273,7 +273,8 @@ const CalendarComponent = ({
               {onAddAppointment && (
                 <button
                   onClick={handleAddAppointmentClick}
-                  className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  className="flex items-center space-x-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm disabled:opacity-50"
+                  disabled={selectedDate && selectedDate < new Date(new Date().setHours(0,0,0,0))}
                 >
                   <Plus className="h-4 w-4" />
                   <span>Add</span>
@@ -317,20 +318,25 @@ const CalendarComponent = ({
                                 ? "bg-green-100 text-green-700"
                                 : appointment.status === "pending"
                                 ? "bg-yellow-100 text-yellow-700"
+                                : appointment.status === "expired"
+                                ? "bg-gray-200 text-gray-500"
                                 : "bg-gray-100 text-gray-700"
                             }`}
                           >
                             {appointment.status}
                           </span>
-                          <button
-                            onClick={(e) =>
-                              handleEditAppointment(appointment, e)
-                            }
-                            className="p-1 hover:bg-gray-100 rounded transition-colors"
-                            title="Edit appointment"
-                          >
-                            <Edit3 className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                          </button>
+                          {/* Only show edit button if not expired */}
+                          {appointment.status !== "expired" && (
+                            <button
+                              onClick={(e) =>
+                                handleEditAppointment(appointment, e)
+                              }
+                              className="p-1 hover:bg-gray-100 rounded transition-colors"
+                              title="Edit appointment"
+                            >
+                              <Edit3 className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                            </button>
+                          )}
                           {/* Delete Button */}
                           <button
                             onClick={() =>
@@ -340,7 +346,6 @@ const CalendarComponent = ({
                             title="Delete appointment"
                           >
                             <Trash className="h-4 w-4 text-red-400 hover:text-red-600" />
-                            
                           </button>
                         </div>
                       </div>

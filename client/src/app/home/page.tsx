@@ -105,20 +105,23 @@ const AppointmentBookingApp = () => {
   const fetchAppointments = async () => {
     try {
       const response = await getAppointments();
+      const now = new Date();
       const transformedAppointments = response.data.appointments.map(
         (item: any) => {
-          const { date, time } = formatDateTime(item.time);
+          const { date, time } = formatDateTime(item.time); // Add isoString if not present
+          const appointmentDateTime = new Date(item.time);
+          const isExpired = appointmentDateTime < now;
           return {
             id: item._id,
             date: date,
             time: time,
             title: item.description,
             description: "none",
-            status: "confirmed",
+            status: isExpired ? "expired" : "confirmed",
+            // isoString: item.time,
           };
         }
       );
-
       setAppointments(transformedAppointments);
     } catch (error) {
       console.error("Error fetching appointments:", error);
@@ -190,9 +193,9 @@ const AppointmentBookingApp = () => {
       setOpenDialog(false);
       setAppointmentPurpose("");
       setSelectedAppointment(null);
-    } catch (error) {
+    } catch (error:any) {
       console.error("Error processing appointment:", error);
-      alert("Error processing appointment. Please try again.");
+      alert(error?.detail || "Error processing appointment. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
