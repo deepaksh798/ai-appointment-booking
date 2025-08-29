@@ -5,51 +5,71 @@ import { usePathname, useRouter } from "next/navigation";
 import { getToken } from "@/_utils/cookies";
 import NavBar from "../NavBar/NavBar";
 
-// import Navbar from "./NavBar";
-
 interface Props {
   children: ReactNode;
 }
 
 const AuthProvider: React.FC<Props> = ({ children }) => {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(false); // Initially set to null to represent loading state
-  const token = getToken();
-  //   removeToken();
   const pathname = usePathname();
-  console.log("token", token);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
+    const token = getToken();
+    console.log("token", token);
+
+    const isLoginPage = pathname === "/login";
+
     if (token) {
       setIsAuthenticated(true);
-      if (pathname?.includes("/login") || pathname === "/") {
+
+      // Redirect authenticated users away from login or root to dashboard
+      if (isLoginPage || pathname === "/") {
         router.push("/home");
       }
     } else {
       setIsAuthenticated(false);
-      router.push("/login");
-    }
-  }, [token, pathname, router]);
 
-  if (isAuthenticated === null) {
-    return null;
+      // Only redirect to login if the user is NOT already on the login page
+      if (!isLoginPage) {
+        router.push("/login");
+      }
+    }
+
+    setIsLoading(false);
+  }, [pathname, router]);
+
+  // Show a loading indicator while checking authentication
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 h-screen">
+        <span className="auth-loader"></span>
+        <p className="text-xl">Checking authentication</p>
+      </div>
+    );
   }
 
-  return (
-    <div>
-      {isAuthenticated ? (
-        <>
-          <NavBar />
+  // After isLoading check
 
-          <div className="h-auto bg-gradient-to-br from-blue-50 to-indigo-100">
-            {children}
-          </div>
-        </>
-      ) : (
-        children
-      )}
-    </div>
-  );
+  if (isAuthenticated) {
+    return (
+      <>
+        <NavBar />
+        <div className="h-full bg-gradient-to-br from-blue-50 to-indigo-100">
+          {children}
+        </div>
+      </>
+    );
+  }
+
+  // Allow unauthenticated users to access /login
+  if (!isAuthenticated && pathname === "/login") {
+    return <>{children}</>;
+  }
+
+  // Otherwise (e.g., trying to access /dashboard unauthenticated), render nothing
+  return null;
 };
 
 export default AuthProvider;

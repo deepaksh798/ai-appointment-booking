@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from "@/lib/Redux/Hook/hook";
 import { fetchUserData } from "@/lib/Redux/Slice/vapiDataSlice";
 import {
   bookAppointment,
+  deleteAppointment,
   getAppointments,
   updateAppointment,
 } from "@/network/Api";
@@ -203,6 +204,19 @@ const AppointmentBookingApp = () => {
     setSelectedAppointment(null);
   };
 
+  // Add this handler
+  const handleDeleteAppointment = async (appointment: any) => {
+    if (window.confirm("Are you sure you want to delete this appointment?")) {
+      try {
+        await deleteAppointment(appointment.id);
+        await fetchAppointments();
+      } catch (error) {
+        console.error("Error deleting appointment:", error);
+        alert("Failed to delete appointment.");
+      }
+    }
+  };
+
   useEffect(() => {
     fetchAppointments();
   }, []);
@@ -218,6 +232,7 @@ const AppointmentBookingApp = () => {
               onDateSelect={handleDateSelect}
               onAppointmentClick={handleAppointmentClick}
               onAddAppointment={handleAddAppointment}
+              onDeleteAppointment={handleDeleteAppointment} // <-- Pass handler
               selectedDate={selectedDate}
               className="h-full"
             />

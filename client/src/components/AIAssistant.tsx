@@ -80,8 +80,8 @@ const AIAssistant = ({
     return "border-gray-300 text-gray-600 bg-gray-50";
   };
   return (
-    <div className="bg-white rounded-2xl shadow-lg h-full">
-      <div className="p-6 h-full flex flex-col">
+    <div className="bg-white rounded-2xl shadow-lg h-full ">
+      <div className="p-6 h-full flex flex-col max-h-[800px]">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">

@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Calendar, ChevronLeft, ChevronRight, Plus, Edit3 } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, Plus, Edit3, Trash } from "lucide-react";
 
 const CalendarComponent = ({
   appointments = [],
   onDateSelect,
   onAppointmentClick,
   onAddAppointment,
+  onDeleteAppointment, // <-- Add this prop
   selectedDate,
   className = "",
 }: any) => {
@@ -329,6 +330,17 @@ const CalendarComponent = ({
                             title="Edit appointment"
                           >
                             <Edit3 className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                          </button>
+                          {/* Delete Button */}
+                          <button
+                            onClick={() =>
+                              onDeleteAppointment && onDeleteAppointment(appointment)
+                            }
+                            className="p-1 hover:bg-red-100 rounded transition-colors"
+                            title="Delete appointment"
+                          >
+                            <Trash className="h-4 w-4 text-red-400 hover:text-red-600" />
+                            
                           </button>
                         </div>
                       </div>
