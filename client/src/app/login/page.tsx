@@ -28,6 +28,9 @@ const AuthPage = () => {
 
   // Signup form validation schema
   const signupSchema = Yup.object().shape({
+    name: Yup.string()
+      .min(2, "Name must be at least 2 characters")
+      .required("Name is required"),
     email: Yup.string()
       .email("Invalid email address")
       .required("Email is required"),
@@ -80,6 +83,7 @@ const AuthPage = () => {
   // Signup form
   const signupFormik: any = useFormik({
     initialValues: {
+      name: "",
       email: "",
       password: "",
       confirmPassword: "",
@@ -89,26 +93,23 @@ const AuthPage = () => {
       setLoading(true);
       try {
         const payload = {
+          name: values.name,
           email: values.email,
           password: values.password,
         };
         await signupApi(payload).then((response) => {
           console.log("Signup response:", response);
           if (response.status === 200) {
-            // Store token or handle successful signup
             setToken(response.data.token);
-            router.push("/home"); // Redirect to home after signup
+            router.push("/home");
             toast.success("Signup successful! Welcome to AI Scheduler.");
           } else {
             throw new Error("Signup failed");
           }
         });
-        // Handle successful signup
         console.log("Signup successful");
       } catch (error) {
         console.error("Signup error:", error);
-
-        // Handle signup error
       } finally {
         setLoading(false);
       }
@@ -278,6 +279,38 @@ const AuthPage = () => {
                 </div>
 
                 <div className="space-y-4">
+                  {/* Name Field */}
+                  <div>
+                    <label
+                      htmlFor="signup-name"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
+                      Name
+                    </label>
+                    <div className="relative">
+                      {/* You can use an icon here if you want */}
+                      <input
+                        id="signup-name"
+                        name="name"
+                        type="text"
+                        value={signupFormik.values.name}
+                        onChange={signupFormik.handleChange}
+                        onBlur={signupFormik.handleBlur}
+                        className={`w-full pl-4 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                          signupFormik.touched.name && signupFormik.errors.name
+                            ? "border-red-300 focus:ring-red-500 focus:border-red-500"
+                            : "border-gray-300"
+                        }`}
+                        placeholder="Enter your name"
+                      />
+                    </div>
+                    {signupFormik.touched.name && signupFormik.errors.name && (
+                      <p className="mt-1 text-sm text-red-600">
+                        {signupFormik.errors.name}
+                      </p>
+                    )}
+                  </div>
+
                   <div>
                     <label
                       htmlFor="signup-email"
