@@ -12,12 +12,14 @@ router = APIRouter()
 
 @router.post("/signup")
 async def signup(user: User):
+    if not user.name or not user.email or not user.password:
+        raise HTTPException(status_code=400, detail="Name, email, and password are required")
     print("Received signup request with user:", user)
     if await db.users.find_one({"email": user.email}):
         print("Email already exists:", user.email)
         raise HTTPException(status_code=400, detail="Email already exists")
     hashed_pwd = bcrypt.hash(user.password)
-    result = await db.users.insert_one({"email": user.email, "password": hashed_pwd})
+    result = await db.users.insert_one({"name": user.name, "email": user.email, "password": hashed_pwd})
     token = create_token(str(result.inserted_id))
     return {"message": "User created successfully", "token": token}
 
@@ -37,5 +39,6 @@ async def get_user_info(current_user: dict = Depends(get_current_user)):
     
     return {
         "email": user["email"],
-        "user_id": str(user["_id"])
+        "user_id": str(user["_id"]),
+        "name": user.get("name", "")
     }

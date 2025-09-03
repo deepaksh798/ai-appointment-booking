@@ -48,7 +48,7 @@ async def create_appointment(appointment: Appointment, user_id: str = Depends(ge
     if user and user.get("email"):
         send_appointment_email(
             to_email=user["email"],
-            to_name=user.get("name", "User"),
+            to_name=user.get("name") or "User",
             appointment_time=appointment.time.strftime("%Y-%m-%d %H:%M UTC")
         )
 

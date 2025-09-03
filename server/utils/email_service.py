@@ -1,12 +1,13 @@
 from mailjet_rest import Client
 import os
+from datetime import datetime, timedelta
 
 def send_appointment_email(to_email: str, to_name: str, appointment_time: str):
     api_key = os.environ['MJ_APIKEY_PUBLIC']
     api_secret = os.environ['MJ_APIKEY_PRIVATE']
     mailjet = Client(auth=(api_key, api_secret), version='v3.1')
 
-    start_dt = datetime.strptime(appointment_time, "%Y-%m-%d %H:%M")
+    start_dt = datetime.strptime(appointment_time, "%Y-%m-%d %H:%M UTC")
     end_dt = start_dt + timedelta(minutes=30)
 
     start_str = start_dt.strftime("%Y%m%dT%H%M%SZ")
