@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from models.user_model import User
+from models.user_model import User, UserLogin
 from app.database import db
 from passlib.hash import bcrypt
 from utils.jwt_handler import create_token, verify_token
@@ -24,7 +24,7 @@ async def signup(user: User):
     return {"message": "User created successfully", "token": token}
 
 @router.post("/login")
-async def login(user: User):
+async def login(user: UserLogin):
     db_user = await db.users.find_one({"email": user.email})
     if not db_user or not bcrypt.verify(user.password, db_user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
