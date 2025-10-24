@@ -25,6 +25,7 @@ async def signup(user: User):
 
 @router.post("/login")
 async def login(user: UserLogin):
+    print("Received login request with user:", user)
     db_user = await db.users.find_one({"email": user.email})
     if not db_user or not bcrypt.verify(user.password, db_user["password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
