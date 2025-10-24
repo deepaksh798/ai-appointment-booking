@@ -108,7 +108,10 @@ const AuthPage = () => {
           }
         });
         console.log("Signup successful");
-      } catch (error) {
+      } catch (error: any) {
+        console.log("Signup failed response:", error);
+
+        toast.error(error.detail || "Signup failed. Please try again.");
         console.error("Signup error:", error);
       } finally {
         setLoading(false);

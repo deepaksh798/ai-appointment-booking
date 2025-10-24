@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import vapi from "@/lib/vapi";
 import { Bot, X, Phone, Mic, PhoneOff, Volume2, VolumeX } from "lucide-react";
+import { characterAssistant } from "@/lib/assistent";
 
 type Props = {
   handleOpenCallAssistant: () => void;
@@ -22,7 +23,7 @@ const AIAssistant = ({
 
     try {
       setCallStatus("Connecting...");
-      vapi.start("98320828-5a1b-429f-934a-c3335a77225c");
+      vapi.start(characterAssistant);
       setCallStatus("Connected");
       vapi.on("call-start", () => {
         setCallStatus("Call Started");
