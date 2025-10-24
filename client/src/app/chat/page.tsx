@@ -23,7 +23,7 @@ export default function Chat() {
 
     socket.on("connect", () => {
       console.log("Connected to WebSocket server with ID:", socket.id);
-      setChatId(socket.id); // reset chatId on new connection
+      setChatId(socket.id ?? ""); // reset chatId on new connection
     });
 
     socket.on("telegram_message", (data: Message & { from: string }) => {
