@@ -1,88 +1,98 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { io, Socket } from "socket.io-client";
 
-type Message = {
-  from: string;
-  message: string;
-};
+type Message = { from: string; message: string };
 
-const socket: Socket = io("http://localhost:8000", {
-  path: "/ws", // match backend mount (or /ws if you use that)
-});
+const WS_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-export default function Chat() {
+const ChatFloating: React.FC = () => {
+  const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [chatId, setChatId] = useState<string>(""); // store Telegram chat_id
+  const [chatId, setChatId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Listen for messages from backend
-    console.log("Setting up socket listener for telegram_message");
-
-    socket.on("connect", () => {
-      console.log("Connected to WebSocket server with ID:", socket.id);
-      setChatId(socket.id ?? ""); // reset chatId on new connection
+    // Create socket but don't auto-connect if you prefer; we connect immediately here on mount
+    const s = io(WS_URL, {
+      path: "/ws", // match server mount
+      transports: ["websocket"],
+      autoConnect: true,
     });
 
-    socket.on("telegram_message", (data: Message & { from: string }) => {
-      console.log("Received message:", data);
-      setMessages((prev) => [
-        ...prev,
-        { from: data.from, message: data.message },
-      ]);
+    setSocket(s);
 
-      setChatId(data.from); // store chat_id automatically for replies
+    s.on("connect", () => {
+      console.log("Socket connected", s.id);
+      setChatId(s.id || null);
     });
 
-    socket.on("disconnect", () => {
-      console.log("Disconnected from WebSocket server");
+    s.on("telegram_message", (payload: Message) => {
+      setMessages((prev) => [...prev, payload]);
     });
+
+    // Optionally fetch missed messages from REST endpoint after connect
+    const fetchMissed = async () => {
+      try {
+        const res = await fetch(`${WS_URL}/telegram-missed`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.messages)) {
+            setMessages((prev) => [...data.messages, ...prev]);
+          }
+        }
+      } catch (e) {
+        console.warn("Failed to fetch missed messages", e);
+      }
+    };
+
+    s.on("connect", fetchMissed);
 
     return () => {
-      socket.off("telegram_message");
+      s.off("telegram_message");
+      s.off("connect", fetchMissed);
+      s.disconnect();
+      setSocket(null);
     };
   }, []);
 
-  const sendMessage = () => {
-    console.log("Sending message to chat ID:", chatId);
-    if (!chatId || input.trim() === "") return;
-    socket.emit("send_message", { chat_id: chatId, message: input });
-    setMessages((prev) => [...prev, { from: "Me", message: input }]);
+  const sendMessage = async () => {
+    if (!input.trim() || !socket) return;
+    const payload = { chat_id: chatId || "", message: input.trim() };
+    socket.emit("send_message", payload);
+    setMessages((prev) => [...prev, { from: "me", message: input.trim() }]);
     setInput("");
   };
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-4 border rounded shadow-md bg-white">
-      <h2 className="text-xl font-bold mb-4">Telegram Chat Test</h2>
-      <div className="h-64 overflow-y-auto border p-2 mb-4 space-y-2">
-        {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`p-2 rounded ${
-              msg.from === "Me" ? "bg-blue-100 text-right" : "bg-gray-100"
-            }`}
-          >
-            <strong>{msg.from}:</strong> {msg.message}
+    <div className=" w-96 bg-white shadow-lg rounded-lg p-3">
+      <div className="h-80 overflow-y-auto mb-2">
+        {messages.map((m, i) => (
+          <div key={i} className={`p-2 ${m.from === "me" ? "text-right" : ""}`}>
+            <div className="inline-block bg-gray-100 p-2 rounded">
+              <strong>{m.from === "me" ? "You" : m.from}:</strong> {m.message}
+            </div>
           </div>
         ))}
       </div>
+
       <div className="flex gap-2">
         <input
           className="flex-1 p-2 border rounded"
-          type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type your message..."
+          placeholder="Type a message..."
         />
         <button
-          className="px-4 py-2 bg-blue-500 text-white rounded"
           onClick={sendMessage}
+          className="px-3 py-2 bg-blue-600 text-white rounded"
         >
           Send
         </button>
       </div>
     </div>
   );
-}
+};
+
+export default ChatFloating;

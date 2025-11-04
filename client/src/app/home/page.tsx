@@ -14,11 +14,14 @@ import {
 } from "@/network/Api";
 import formatDateTime from "@/_utils/formatDateTime";
 import ResponsiveDialog from "@/components/Dialog.tsx/Dialog";
+import ChatFloating from "@/components/ChatFloating";
+import { MessageCircleMore, MessageSquare } from "lucide-react";
 
 // Main App Component
 const AppointmentBookingApp = () => {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null); // Start with null
   const [openCallAssistant, setOpenCallAssistant] = useState(false);
+  const [openFloatingChat, setOpenFloatingChat] = useState(false);
   const [openDialog, setOpenDialog] = useState<boolean>(false);
   const [dialogMode, setDialogMode] = useState<"add" | "edit">("add");
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
@@ -193,7 +196,7 @@ const AppointmentBookingApp = () => {
       setOpenDialog(false);
       setAppointmentPurpose("");
       setSelectedAppointment(null);
-    } catch (error:any) {
+    } catch (error: any) {
       console.error("Error processing appointment:", error);
       alert(error?.detail || "Error processing appointment. Please try again.");
     } finally {
@@ -331,6 +334,36 @@ const AppointmentBookingApp = () => {
           </div>
         </div>
       </ResponsiveDialog>
+
+      {/* Floating Chat Button (bottom-right) */}
+      <button
+        onClick={() => setOpenFloatingChat(!openFloatingChat)}
+        aria-label="Open chat"
+        className="fixed bottom-6 right-6 z-50 p-4 rounded-full bg-blue-600 text-white shadow-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      >
+        <MessageCircleMore />
+      </button>
+
+      {/* Floating Chat Panel */}
+      {openFloatingChat && (
+        <div className="fixed bottom-20 right-6 z-50 w-80 md:w-96 border-2 border-blue-600 bg-white rounded-lg shadow-lg overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 border-b">
+            <div className="font-medium">Talk to Assistant</div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setOpenFloatingChat(false)}
+                aria-label="Close chat"
+                className="text-gray-500 hover:text-gray-700 px-2 py-1"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+          <div className="p-2 h-64 overflow-auto">
+            <ChatFloating />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
