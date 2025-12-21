@@ -23,7 +23,7 @@ const AIAssistant = ({
 
     try {
       setCallStatus("Connecting...");
-      vapi.start(characterAssistant);
+      vapi.start("98320828-5a1b-429f-934a-c3335a77225c");
       setCallStatus("Connected");
       vapi.on("call-start", () => {
         setCallStatus("Call Started");
