@@ -2,16 +2,20 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { io, Socket } from "socket.io-client";
+import { getToken } from "@/_utils/cookies";
 
 type Message = { from: string; message: string; timestamp?: number };
-
-const WS_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL =
+  (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(
+    /\/+$/,
+    ""
+  );
 
 const ChatFloating: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [chatId, setChatId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -25,17 +29,18 @@ const ChatFloating: React.FC = () => {
   }, [messages]);
 
   useEffect(() => {
-    const s = io(WS_URL, {
+    const token = getToken();
+    const s = io(API_BASE_URL, {
       path: "/ws",
       transports: ["websocket"],
       autoConnect: true,
+      auth: { token },
     });
 
     setSocket(s);
 
     s.on("connect", () => {
       console.log("Socket connected", s.id);
-      setChatId(s.id || null);
       setIsConnected(true);
     });
 
@@ -43,29 +48,56 @@ const ChatFloating: React.FC = () => {
       setIsConnected(false);
     });
 
-    s.on("telegram_message", (payload: Message) => {
-      setMessages((prev) => [...prev, { ...payload, timestamp: Date.now() }]);
+    s.on("session_ready", (payload: { session_id?: string }) => {
+      setSessionId(payload?.session_id || null);
     });
 
-    const fetchMissed = async () => {
+    s.on("chat_message", (payload: any) => {
+      if (!payload?.message) return;
+      setMessages((prev) => [
+        ...prev,
+        {
+          from: payload?.from || "admin",
+          message: payload.message,
+          timestamp: payload?.created_at
+            ? new Date(payload.created_at).getTime()
+            : Date.now(),
+        },
+      ]);
+    });
+
+    const fetchHistory = async () => {
       try {
-        const res = await fetch(`${WS_URL}/telegram-missed`);
+        if (!token) return;
+        const res = await fetch(`${API_BASE_URL}/chat/history`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data.messages)) {
-            setMessages((prev) => [...data.messages, ...prev]);
+            setMessages(
+              data.messages.map((m: any) => ({
+                from: m.from,
+                message: m.message,
+                timestamp: m.created_at
+                  ? new Date(m.created_at).getTime()
+                  : Date.now(),
+              }))
+            );
           }
         }
       } catch (e) {
-        console.warn("Failed to fetch missed messages", e);
+        console.warn("Failed to fetch chat history", e);
       }
     };
 
-    s.on("connect", fetchMissed);
+    fetchHistory();
 
     return () => {
-      s.off("telegram_message");
-      s.off("connect", fetchMissed);
+      s.off("session_ready");
+      s.off("chat_message");
       s.off("disconnect");
       s.disconnect();
       setSocket(null);
@@ -74,12 +106,7 @@ const ChatFloating: React.FC = () => {
 
   const sendMessage = async () => {
     if (!input.trim() || !socket) return;
-    const payload = { chat_id: chatId || "", message: input.trim() };
-    socket.emit("send_message", payload);
-    setMessages((prev) => [
-      ...prev,
-      { from: "me", message: input.trim(), timestamp: Date.now() },
-    ]);
+    socket.emit("send_message", { message: input.trim() });
     setInput("");
     inputRef.current?.focus();
   };
@@ -108,7 +135,9 @@ const ChatFloating: React.FC = () => {
             }`}
           />
           <span className="text-xs text-gray-600">
-            {isConnected ? "Connected" : "Connecting..."}
+            {isConnected
+              ? `Connected${sessionId ? ` • Session ${sessionId.slice(-6)}` : ""}`
+              : "Connecting..."}
           </span>
         </div>
       </div>
