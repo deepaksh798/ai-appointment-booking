@@ -21,7 +21,7 @@ def parse_reply_text_after_session_command(text: str) -> str:
 
 
 async def forward_user_message_to_telegram(
-    *, user_id: str, session_id: str, text: str
+    *, user_id: str, session_id: str, text: str, user_name: str | None = None
 ) -> int | None:
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_ADMIN_CHAT_ID:
         # Keep API alive even when telegram config is missing.
@@ -32,9 +32,10 @@ async def forward_user_message_to_telegram(
         "chat_id": TELEGRAM_ADMIN_CHAT_ID,
         "text": (
             f"New user message\n"
+            f"Name: {user_name or 'Unknown'}\n"
             f"User: {user_id}\n"
             f"Session: {session_id}\n\n"
-            f"{text}\n\n"
+            f"Message: {text}\n\n"
             f"Reply format:\n/session {session_id} <your message>"
         ),
     }

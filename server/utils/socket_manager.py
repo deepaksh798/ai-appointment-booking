@@ -1,5 +1,6 @@
 import socketio
 from datetime import datetime, timezone
+from bson import ObjectId
 
 from app.database import db
 from utils.jwt_handler import verify_token
@@ -29,6 +30,16 @@ async def _get_or_create_session(user_id: str) -> str:
     payload = {"user_id": user_id, "created_at": now, "updated_at": now}
     created = await db.chat_sessions.insert_one(payload)
     return str(created.inserted_id)
+
+
+async def _get_user_name(user_id: str) -> str | None:
+    try:
+        user = await db.users.find_one({"_id": ObjectId(user_id)})
+    except Exception:
+        return None
+    if not user:
+        return None
+    return user.get("name")
 
 
 async def persist_chat_message(
@@ -104,6 +115,7 @@ async def send_message(sid, payload):
         user_id=user_id,
         session_id=session_id,
         text=text,
+        user_name=await _get_user_name(user_id),
     )
 
     await sio.emit(
