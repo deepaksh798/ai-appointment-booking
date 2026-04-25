@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import vapi from "@/lib/vapi";
 import { Bot, X, Phone, Mic, PhoneOff, Volume2, VolumeX } from "lucide-react";
-import { characterAssistant } from "@/lib/assistent";
+// import { characterAssistant } from "@/lib/assistent";
+import { getUserProfile } from "@/network/Api";
 
 type Props = {
   handleOpenCallAssistant: () => void;
@@ -14,16 +15,33 @@ const AIAssistant = ({
 }: Props) => {
   const [callStatus, setCallStatus] = useState("Disconnected");
   const [callMute, setCallMute] = useState(true);
-  const [isSpeaking, setIsSpeaking] = useState(false); // State to control Lottie animation
+  const [isSpeaking, setIsSpeaking] = useState(false); // State to control animation
   const [isCallActive, setIsCallActive] = useState(false);
+  const [userDetails, setUserDetails] = useState<{
+    name?: string;
+    email?: string;
+    user_id?: string;
+  }>({});
 
   // vapi call
   const handleStartCall = async () => {
-    console.log("running handleStartCall");
+    getUserProfile().then((res) => {
+      console.log("user profile data in ai assistant -->", res.data);
+      setUserDetails(res?.data);
+    });
 
     try {
       setCallStatus("Connecting...");
-      vapi.start("98320828-5a1b-429f-934a-c3335a77225c");
+      vapi.start("98320828-5a1b-429f-934a-c3335a77225c", {
+        variableValues: {
+          name: userDetails?.name || "there",
+        },
+
+        metadata: {
+          userId: userDetails?.user_id,
+          email: userDetails?.email,
+        },
+      });
       setCallStatus("Connected");
       vapi.on("call-start", () => {
         setCallStatus("Call Started");

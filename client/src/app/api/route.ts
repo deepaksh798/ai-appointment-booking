@@ -2,6 +2,8 @@ export const runtime = "edge"; // Keep this if you're deploying on Edge
 
 export async function POST(request: Request, context: any) {
   const data = await request.json();
+  console.log("LOGS --> ", data);
+
   const logs = data.message?.toolCalls;
 
   if (!logs) {

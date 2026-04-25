@@ -60,7 +60,7 @@ const AppointmentBookingApp = () => {
 
     setSelectedAppointment(appointment);
     setSelectedTime(timeValue);
-    setAppointmentPurpose(appointment.title || appointment.description || "");
+    setAppointmentPurpose(appointment.title || appointment.purpose || "");
     setDialogMode("edit");
     setOpenDialog(true);
   };
@@ -90,7 +90,7 @@ const AppointmentBookingApp = () => {
     ) {
       const payload = {
         time: userDetails.dateAndTime,
-        description: userDetails.purposeOfAppointment,
+        purpose: userDetails.purposeOfAppointment,
       };
 
       console.log("Booking appointment with payload:", payload);
@@ -118,7 +118,7 @@ const AppointmentBookingApp = () => {
             id: item._id,
             date: date,
             time: time,
-            title: item.description,
+            title: item.purpose,
             description: "none",
             status: isExpired ? "expired" : "confirmed",
             // isoString: item.time,
@@ -166,7 +166,7 @@ const AppointmentBookingApp = () => {
 
       const payload = {
         time: isoTime,
-        description: appointmentPurpose.trim(),
+        purpose: appointmentPurpose.trim(),
       };
 
       console.log("Selected Date:", selectedDate);
@@ -346,7 +346,7 @@ const AppointmentBookingApp = () => {
 
       {/* Floating Chat Panel */}
       {openFloatingChat && (
-        <div className="fixed bottom-20 right-6 z-50 w-80 md:w-96 border-2 border-blue-600 bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="fixed bottom-20 right-6 z-50 w-80 md:w-96 bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2 border-b">
             <div className="font-medium">Talk to Assistant</div>
             <div className="flex items-center space-x-2">

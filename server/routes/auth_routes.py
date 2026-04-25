@@ -10,6 +10,7 @@ from bson import ObjectId
 
 router = APIRouter()
 
+# Signup route
 @router.post("/signup")
 async def signup(user: User):
     if not user.name or not user.email or not user.password:
@@ -23,6 +24,7 @@ async def signup(user: User):
     token = create_token(str(result.inserted_id))
     return {"message": "User created successfully", "token": token}
 
+# Login route
 @router.post("/login")
 async def login(user: UserLogin):
     print("Received login request with user:", user)
@@ -32,6 +34,7 @@ async def login(user: UserLogin):
     token = create_token(str(db_user["_id"]))
     return {"message": "Login Successfully", "token": token}
 
+# Get current user info
 @router.get("/me")
 async def get_user_info(current_user: dict = Depends(get_current_user)):
     user = await db.users.find_one({"_id": ObjectId(current_user["user_id"])})

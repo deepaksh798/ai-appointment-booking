@@ -11,12 +11,13 @@ const ChatFloating: React.FC = () => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [chatId, setChatId] = useState<string | null>(null);
+  const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
 
   useEffect(() => {
-    // Create socket but don't auto-connect if you prefer; we connect immediately here on mount
+    console.log("Connecting to WebSocket at", WS_URL);
+
     const s = io(WS_URL, {
-      path: "/ws", // match server mount
+      path: "/ws/socket.io", // use this if server uses app.mount("/ws", ASGIApp(sio))
       transports: ["websocket"],
       autoConnect: true,
     });
@@ -25,51 +26,80 @@ const ChatFloating: React.FC = () => {
 
     s.on("connect", () => {
       console.log("Socket connected", s.id);
-      setChatId(s.id || null);
+    });
+
+    s.on("connect_error", (err: any) => {
+      console.error("Socket connect error:", err);
+    });
+
+    s.on("disconnect", (reason: any) => {
+      console.log("Socket disconnected:", reason);
     });
 
     s.on("telegram_message", (payload: Message) => {
+      console.log("telegram_message received", payload);
       setMessages((prev) => [...prev, payload]);
+
+      // If no chat selected, auto-select the chat id from the latest incoming message
+      if (!selectedChatId) {
+        setSelectedChatId(String((payload as any).from));
+      }
     });
 
-    // Optionally fetch missed messages from REST endpoint after connect
-    const fetchMissed = async () => {
-      try {
-        const res = await fetch(`${WS_URL}/telegram-missed`);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data.messages)) {
-            setMessages((prev) => [...data.messages, ...prev]);
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to fetch missed messages", e);
-      }
-    };
-
-    s.on("connect", fetchMissed);
+    // listen for ack/result from server after sending to telegram
+    s.on("send_result", (res: any) => {
+      console.log("send_result:", res);
+      // Optionally show status to user
+    });
 
     return () => {
       s.off("telegram_message");
-      s.off("connect", fetchMissed);
+      s.off("send_result");
       s.disconnect();
       setSocket(null);
     };
   }, []);
 
-  const sendMessage = async () => {
+  const sendMessage = () => {
     if (!input.trim() || !socket) return;
-    const payload = { chat_id: chatId || "", message: input.trim() };
-    socket.emit("send_message", payload);
+    if (!selectedChatId) {
+      alert("No Telegram chat selected to send the message to.");
+      return;
+    }
+
+    const payload = { chat_id: selectedChatId, message: input.trim() };
+
+    // Optionally use acknowledgement (callback) to know success/failure
+    socket.emit("send_message", payload, (ack: any) => {
+      console.log("send_message ack (if server sends one):", ack);
+    });
+
     setMessages((prev) => [...prev, { from: "me", message: input.trim() }]);
     setInput("");
   };
 
   return (
-    <div className=" w-96 bg-white shadow-lg rounded-lg p-3">
-      <div className="h-80 overflow-y-auto mb-2">
+    <div className="w-96 bg-white shadow-lg rounded-lg p-3">
+      <div className="mb-2">
+        <div className="text-sm text-gray-600">
+          Replying to Telegram chat: {selectedChatId ?? "none"}
+        </div>
+        <div className="text-xs text-gray-500">
+          Tip: click an incoming message to change selected chat.
+        </div>
+      </div>
+
+      <div className="h-72 overflow-y-auto mb-2">
         {messages.map((m, i) => (
-          <div key={i} className={`p-2 ${m.from === "me" ? "text-right" : ""}`}>
+          <div
+            key={i}
+            className={`p-2 ${m.from === "me" ? "text-right" : "text-left"}`}
+            onClick={() => {
+              // clicking an incoming Telegram message selects that chat id
+              if (m.from !== "me") setSelectedChatId(String(m.from));
+            }}
+            style={{ cursor: m.from !== "me" ? "pointer" : "default" }}
+          >
             <div className="inline-block bg-gray-100 p-2 rounded">
               <strong>{m.from === "me" ? "You" : m.from}:</strong> {m.message}
             </div>

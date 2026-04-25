@@ -3,4 +3,5 @@ from datetime import datetime
 
 class Appointment(BaseModel):
     time: datetime
-    description: str
+    purpose: str
+    

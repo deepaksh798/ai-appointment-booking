@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from bson.objectid import ObjectId
 from datetime import timedelta, datetime, timezone
 from utils.email_service import send_appointment_email
+from fastapi import Request
 
 router = APIRouter()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -21,8 +22,10 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 @router.post("/add-appointment")
 async def create_appointment(appointment: Appointment, user_id: str = Depends(get_current_user)):
     print("Creating appointment for user:", user_id, "with data:", appointment)
-    appointment_data = appointment.model_dump()
+    appointment_data = appointment.model_dump() # model_dump() is used to convert Pydantic model to dict
     appointment_data["user_id"] = user_id
+    created_at = datetime.now(timezone.utc)
+    appointment_data["created_at"] = created_at
 
     if appointment.time < datetime.now(timezone.utc):
         raise HTTPException(status_code=400, detail="Cannot book an appointment in the past.")
@@ -140,3 +143,77 @@ async def get_appointment(appointment_id: str, user_id: str = Depends(get_curren
     print("Found appointment:", appointment)
     return {"appointment": appointment}
 
+
+@router.post("/vapi-webhook")
+async def handle_vapi_call(request: Request):
+    payload = await request.json()
+    message = payload.get("message", {})
+
+    print("Received payload:", payload)
+
+    # 1. Check if Vapi is calling the 'bookAppointment' tool
+    if message.get("type") == "tool-calls":
+        tool_call = message.get("toolCalls")[0]
+        args = tool_call.get("function", {}).get("arguments", {})
+        
+
+        metadata = message.get("artifact", {}).get("metadata", {})
+        user_id = metadata.get("userId")
+
+        if not user_id:
+            return {"results": [{"toolCallId": tool_call["id"], "error": "User ID missing"}]}
+
+        # 3. Process the data
+        try:
+            # Vapi send time in ISO format
+            apt_time_str = args.get("dateAndTime")
+            apt_time = datetime.fromisoformat(apt_time_str.replace("Z", "+00:00"))
+            
+            # 4. Check for Conflicts (Your existing logic)
+            start_time = apt_time - timedelta(minutes=30)
+            end_time = apt_time + timedelta(minutes=30)
+
+            check_existing = await db.appointments.find_one({
+                "time": {"$gte": start_time, "$lt": end_time} # gte: greater than or equal to, lt: less than
+            })
+
+            if check_existing:
+                return {
+                    "results": [{
+                        "toolCallId": tool_call["id"], 
+                        "result": "Sorry, that slot is already taken."
+                    }]
+                }
+
+            # 5. Save to Database
+            appointment_doc = {
+                "user_id": user_id,
+                "time": apt_time,
+                "purpose": args.get("purpose", "General Consultation"),
+                "created_at": datetime.now(timezone.utc)
+            }
+            print("Inserting appointment document:", appointment_doc)
+            
+            await db.appointments.insert_one(appointment_doc)
+
+            # 6. Trigger Email
+            user = await db.users.find_one({"_id": ObjectId(user_id)})
+            if user and user.get("email"):
+                send_appointment_email(
+                    to_email=user["email"],
+                    to_name=user.get("name", "User"),
+                    appointment_time=apt_time.strftime("%Y-%m-%d %H:%M")
+                )
+
+            return {
+                "results": [{
+                    "toolCallId": tool_call["id"], 
+                    "result": "Appointment booked successfully!"
+                }]
+            }
+
+        except Exception as e:
+            print(f"Error processing voice booking: {e}")
+            return {"results": [{"toolCallId": tool_call["id"], "error": str(e)}]}
+
+    return {"status": "ignored"}
