@@ -15,7 +15,7 @@ import {
 import formatDateTime from "@/_utils/formatDateTime";
 import ResponsiveDialog from "@/components/Dialog.tsx/Dialog";
 import ChatFloating from "@/components/ChatFloating";
-import { MessageCircleMore, MessageSquare } from "lucide-react";
+import { MessageCircleMore } from "lucide-react";
 
 // Main App Component
 const AppointmentBookingApp = () => {
